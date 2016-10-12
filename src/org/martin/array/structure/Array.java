@@ -235,13 +235,17 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
         if(c.isEmpty()) return false;
         synchronized(array){
             boolean containsAll = false;
-            for (int i = 0; i < size; i++) {
-                for (Object object : c) {
-                    containsAll = array[i].equals(object);
-                    if (!containsAll)
-                        return false;
+            for (Object object : c) {
+                for (int i = 0; i < size; i++) {
+                    if (array.equals(object)) {
+                        containsAll = true;
+                        break;
+                    }
+                    else
+                        containsAll = false;
                 }
             }
+            
             return containsAll;
         }
     }
@@ -263,12 +267,19 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
     public boolean addAll(int index, Collection<? extends E> c) {
         synchronized(array){
             checkIndex(index);
+            
             if(!isEmpty() && !c.isEmpty()) {
-                openSpace(index, c.size());
-                for (E e : c) {
-                    array[size] = e;
-                    size++;
-                }
+//                openSpace(index, c.size());
+//                for (E e : c) {
+//                    array[size] = e;
+//                    size++;
+//                }
+                List<E> subListStart = subList(0, index);
+                List<E> subListFinish = subList(index, size);
+                clear();
+                addAll(subListStart);
+                addAll(c);
+                addAll(subListFinish);
                 checkMemory();
                 return true;
             }
@@ -389,7 +400,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
     @Override
     public List<E> subList(int fromIndex, int toIndex) {
         checkIndex(fromIndex);
-        checkIndex(toIndex);
+        checkIndex(toIndex-1);
         List<E> list = new Array<>();
         
         for (int i = fromIndex; i < toIndex; i++)
