@@ -7,6 +7,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.RandomAccess;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -105,7 +108,13 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
         }
         size--;
     }
-    
+//
+//    private void reduct(int spacesCount){
+//        for (int i = 0; i < size; i++) {
+//            
+//        }
+//    }
+
     private void openSpace(int index, int spacesNumber){
         checkCapacity();
         
@@ -200,12 +209,15 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
 
     @Override
     public Object[] toArray() {
-        return array;
+        return Arrays.copyOfRange(array, 0, size);
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        return (T[]) array;
+        if(a.length < size)
+            array = (E[]) new Object[size];
+        System.arraycopy(array, 0, a, 0, size);
+        return a;
     }
 
     @Override
@@ -244,7 +256,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
             boolean containsAll = false;
             for (Object object : c) {
                 for (int i = 0; i < size; i++) {
-                    if (array.equals(object)) {
+                    if (array[i].equals(object)) {
                         containsAll = true;
                         break;
                     }
@@ -373,7 +385,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
             return e;
         }
     }
-
+    
     @Override
     public void add(int index, E element) {
         checkIndex(index);
@@ -409,12 +421,12 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
 
     @Override
     public ListIterator<E> listIterator() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return new ArrayListIterator<>(this);
     }
 
     @Override
     public ListIterator<E> listIterator(int index) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return new ArrayListIterator<>(index-1, this);
     }
 
     @Override
@@ -426,6 +438,19 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
         for (int i = fromIndex; i < toIndex; i++)
             list.add(array[i]);
         return list;
+    }
+
+    @Override
+    public boolean removeIf(Predicate<? super E> filter) {
+        boolean deleted = false;
+        synchronized(array){
+            for (int i = 0; i < size; i++) 
+                if (filter.test(array[i])){
+                    goBack(i);
+                    deleted = true;
+                }
+        }
+        return deleted;
     }
 
     private class ArrayIterator<E> implements Iterator<E>{
@@ -449,11 +474,17 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
     }
     
     private class ArrayListIterator<E> implements ListIterator<E>{
-
         private int index;
-
-        public ArrayListIterator() {
+        private final Array<E> list;
+        
+        public ArrayListIterator(Array<E> list) {
             index = -1;
+            this.list = list;
+        }
+
+        public ArrayListIterator(int index, Array<E> list) {
+            this.index = index;
+            this.list = list;
         }
         
         @Override
@@ -464,7 +495,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
         @Override
         public E next() {
             index++;
-            return (E) array[index];
+            return list.array[index];
         }
 
         @Override
@@ -474,12 +505,9 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
 
         @Override
         public E previous() {
-            if (index == -1) 
-                return (E) array[0];
-            else
-                return (E) array[index];
+            return (index == -1) ? null : list.array[index];
         }
-
+        
         @Override
         public int nextIndex() {
             return index+1;
@@ -492,16 +520,17 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
 
         @Override
         public void remove() {
+            list.remove(index+1);
         }
 
         @Override
         public void set(E e) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            list.set(index+1, e);
         }
 
         @Override
         public void add(E e) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            list.add(e);
         }
         
     }
