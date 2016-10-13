@@ -22,7 +22,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
     private E[] array;
     private int size;
     private int capacity;
-    private static final int defaultCapacity = 100;
+    private static final int DEFAULT_CAPACITY = 100;
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE-8;
    
     /**
@@ -31,7 +31,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
      */
     
     public Array() {
-        this(defaultCapacity);
+        this(DEFAULT_CAPACITY);
     }
 
     /**
@@ -41,8 +41,8 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
      * @param initialCapacity Capacidad inicial a establecer.
      */
     public Array(int initialCapacity) {
-        if (initialCapacity < defaultCapacity)
-            array = (E[]) new Object[defaultCapacity];
+        if (initialCapacity < DEFAULT_CAPACITY)
+            array = (E[]) new Object[DEFAULT_CAPACITY];
         else
             array = (E[]) new Object[initialCapacity];
         capacity = array.length;
@@ -62,19 +62,23 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
     }
     
     private void grow(int minCapacity){
-        int oldCapacity = array.length;
-        int newCapacity = oldCapacity + (oldCapacity >> 1);
-        if (newCapacity - minCapacity < 0)
-            newCapacity = minCapacity;
+        int newCapacity = capacity + (capacity >> 1);
+//        if (newCapacity - minCapacity < 0)
+//            newCapacity = minCapacity;
         if (newCapacity - MAX_ARRAY_SIZE > 0)
             newCapacity = hugeCapacity(minCapacity);
         array = Arrays.copyOf(array, newCapacity);
+        capacity = newCapacity;
     }
 
-    private void ensureExplicitCapacity(int minCapacity) {
-        capacity++;
-         
-        if (minCapacity - array.length > 0)
+    // minCapacity --> la capacidad minima que debe contener
+    // la lista, ya que, debe ser por lo menos size+1 para tener
+    // espacios para más elementos.
+    // capacity --> capacidad del arreglo(lenght).
+    private void ensureCapacity(int minCapacity) {
+        // si el size+1 es mayor que la capacidad del arreglo
+        // si debe agrandar el array.
+        if (minCapacity > capacity)
             grow(minCapacity);
     }
     
@@ -157,7 +161,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
     }
 
     private void checkCapacity(){
-        if (size == array.length)
+        if (size+1 > capacity)
             grow(size+1);
     }
 
@@ -207,7 +211,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
     @Override
     public boolean add(E e) {
         synchronized(array){
-            ensureExplicitCapacity(size+1);
+            ensureCapacity(size+1);
             array[size] = e;
             size++;
             checkMemory();
@@ -217,17 +221,20 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
 
     @Override
     public boolean remove(Object o) {
-        boolean deleted = false;
         synchronized (array) {
-            for (int i = 0; i < size; i++) {
-                if (array[i].equals(o)) {
-                    goBack(i);
-                    deleted = true;
-                    break;
-                }
-            }
+            int index = indexOf(o);
+            if(index != -1)
+                goBack(index);
+            
+            return index != -1;
+//            for (int i = 0; i < size; i++) {
+//                if (array[i].equals(o)) {
+//                    goBack(i);
+//                    deleted = true;
+//                    break;
+//                }
+//            }
         }
-        return deleted;
     }
 
     @Override
@@ -254,7 +261,7 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
     public boolean addAll(Collection<? extends E> c) {
         synchronized(array){
             for (E e : c) {
-                ensureExplicitCapacity(size+1);
+                ensureCapacity(size+1);
                 array[size] = e;
                 size++;
             }
@@ -329,10 +336,22 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
         }
     }
 
+    /**
+     * Devuelve el primer elemento de la lista, si esta vacía 
+     * se devuelve null.
+     * @return Primer elemento de la lista.
+     */
+    
     public E getFirst(){
         checkIndex(0);
         return array[0];
     }
+    
+     /**
+     * Devuelve el último elemento de la lista, si esta vacía 
+     * se devuelve null.
+     * @return Último elemento de la lista.
+     */
     
     public E getLast(){
         checkIndex(size-1);
@@ -376,15 +395,16 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
 
     @Override
     public int indexOf(Object o) {
-        for (int i = 0; i < size; i++)
-            if (array[i].equals(o))
-                return i;
-        return -1;
+        return BinarySercher.search(array, o, size);
     }
 
     @Override
     public int lastIndexOf(Object o) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        int index = -1;
+        for (int i = 0; i < size; i++)
+            if (array[i].equals(o))
+                index = i;
+        return index;
     }
 
     @Override
@@ -424,6 +444,64 @@ public class Array<E> implements List<E>, RandomAccess, Cloneable, java.io.Seria
         public E next() {
             index++;
             return (E) array[index];
+        }
+        
+    }
+    
+    private class ArrayListIterator<E> implements ListIterator<E>{
+
+        private int index;
+
+        public ArrayListIterator() {
+            index = -1;
+        }
+        
+        @Override
+        public boolean hasNext() {
+            return index+1 < size;
+        }
+
+        @Override
+        public E next() {
+            index++;
+            return (E) array[index];
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return index >= 0 && !isEmpty();
+        }
+
+        @Override
+        public E previous() {
+            if (index == -1) 
+                return (E) array[0];
+            else
+                return (E) array[index];
+        }
+
+        @Override
+        public int nextIndex() {
+            return index+1;
+        }
+
+        @Override
+        public int previousIndex() {
+            return index;
+        }
+
+        @Override
+        public void remove() {
+        }
+
+        @Override
+        public void set(E e) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public void add(E e) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
         
     }

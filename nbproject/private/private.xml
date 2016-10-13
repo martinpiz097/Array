@@ -5,7 +5,9 @@
         <group name="powerDB">
             <file>file:/home/martin/Dropbox/Java/Proyectos/NetBeansProjects/Array/src/org/martin/array/threads/ThreadMachine.java</file>
             <file>file:/home/martin/Dropbox/Java/Proyectos/NetBeansProjects/Array/src/org/martin/array/structure/Array.java</file>
+            <file>file:/home/martin/Dropbox/Java/Proyectos/NetBeansProjects/Array/src/org/martin/array/structure/TSearcher.java</file>
             <file>file:/home/martin/Dropbox/Java/Proyectos/NetBeansProjects/Array/src/org/martin/array/listeners/CapacityListener.java</file>
+            <file>file:/home/martin/Dropbox/Java/Proyectos/NetBeansProjects/Array/src/org/martin/array/structure/BinarySercher.java</file>
         </group>
     </open-files>
 </project-private>
